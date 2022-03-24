@@ -1,0 +1,135 @@
+#include "implementation.oil"
+
+CPU ATMEL_AT91SAM7S256
+{
+  OS LEJOS_OSEK
+  {
+    STATUS = EXTENDED;
+    STARTUPHOOK = FALSE;
+    ERRORHOOK = FALSE;
+    SHUTDOWNHOOK = FALSE;
+    PRETASKHOOK = FALSE;
+    POSTTASKHOOK = FALSE;
+    USEGETSERVICEID = FALSE;
+    USEPARAMETERACCESS = FALSE;
+    USERESSCHEDULER = FALSE;
+  };
+
+
+  APPMODE appmode1{}; 
+
+  EVENT DREvent
+  {
+    MASK = AUTO;
+  };
+
+  EVENT BAEvent
+  {
+    MASK = AUTO;
+  };
+
+  EVENT STEvent
+  {
+    MASK = AUTO;
+  };
+
+  RESOURCE sen_resource
+  {
+    RESOURCEPROPERTY = STANDARD;
+  };
+
+  TASK sensing
+  {
+    AUTOSTART = FALSE;
+    PRIORITY = 1;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+    RESOURCE = sen_resource;
+  };
+
+  TASK drive
+  {
+    AUTOSTART = TRUE
+    {
+      APPMODE = appmode1;
+    };
+    PRIORITY = 2; 
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512; 
+    EVENT = DREvent;
+  };
+
+  TASK back
+  {
+    AUTOSTART = TRUE
+    {
+      APPMODE = appmode1;
+    };
+    PRIORITY = 3;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+    EVENT = BAEvent;
+  };
+ 
+  TASK stop
+  {
+    AUTOSTART = TRUE
+    {
+      APPMODE = appmode1;
+    };
+    PRIORITY = 4;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+    EVENT = STEvent;
+  };
+
+  TASK steering
+  {
+    AUTOSTART = FALSE;
+    PRIORITY = 5; 
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+  };
+
+  COUNTER SysTimerCnt
+  {
+    MINCYCLE = 1;
+    MAXALLOWEDVALUE = 10000;
+    TICKSPERBASE = 1;
+  };
+  
+  ALARM sensing_aralm
+  {
+    COUNTER = SysTimerCnt;
+    ACTION = ACTIVATETASK
+    {
+        TASK = sensing;
+    };
+    AUTOSTART = TRUE
+    {
+        ALARMTIME = 1;
+        CYCLETIME = 50;
+        APPMODE = appmode1;
+    };
+  };
+  
+  ALARM steering_alarm
+  {
+    COUNTER = SysTimerCnt;
+    ACTION = ACTIVATETASK
+    {
+        TASK = steering;
+    };
+    AUTOSTART = TRUE
+    {
+        ALARMTIME = 1;
+        CYCLETIME = 15;
+        APPMODE = appmode1;
+    };
+  };
+};

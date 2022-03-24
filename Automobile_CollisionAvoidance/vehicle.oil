@@ -1,0 +1,136 @@
+#include "implementation.oil"
+
+CPU ATMEL_AT91SAM7S256
+{
+  OS LEJOS_OSEK
+  {
+    STATUS = EXTENDED;
+    STARTUPHOOK = FALSE;
+    ERRORHOOK = FALSE;
+    SHUTDOWNHOOK = FALSE;
+    PRETASKHOOK = FALSE;
+    POSTTASKHOOK = FALSE;
+    USEGETSERVICEID = FALSE;
+    USEPARAMETERACCESS = FALSE;
+    USERESSCHEDULER = FALSE;
+  };
+
+  /* Definition of application mode */
+  APPMODE appmode1{}; 
+
+  /* Definition of Resource to get when TASK modifies global variable */
+  RESOURCE SpeedResource
+  {
+    RESOURCEPROPERTY = STANDARD;
+  };
+
+  /* Definition of Event for DistSensing TASK to alert timing to sense distance */
+  EVENT SonicActivate{
+	MASK = AUTO;
+  };
+
+  
+  TASK BtReceiver
+  {
+    AUTOSTART = FALSE;
+    PRIORITY = 3; 
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+    RESOURCE = SpeedResource;
+  };
+
+  TASK DistSensing
+  {
+    AUTOSTART = TRUE
+    {
+	APPMODE = appmode1;
+	
+    };
+    PRIORITY = 4; 
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+    EVENT = SonicActivate;
+    RESOURCE = SpeedResource;
+  };
+
+  TASK Operator
+  {
+    AUTOSTART = FALSE;
+    PRIORITY = 2;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512;
+  };
+
+  TASK IdleTask
+  {
+   	AUTOSTART = TRUE 
+	{
+   		APPMODE = appmode1;
+   	};
+    PRIORITY = 1;
+    ACTIVATION = 1;
+    SCHEDULE = FULL;
+    STACKSIZE = 512; 
+  };
+
+  /* Definition of OSEK Alarm Counter */
+  COUNTER SysTimerCnt
+  {
+    MINCYCLE = 1;
+    MAXALLOWEDVALUE = 10000;
+    TICKSPERBASE = 1; 
+  };
+
+  /* Definition of BtReceiver execution timing */
+  ALARM BtAlarm
+  {
+    COUNTER = SysTimerCnt;
+    ACTION = ACTIVATETASK
+    {
+        TASK = BtReceiver;
+    };
+    AUTOSTART = TRUE
+    {
+        ALARMTIME = 1;
+        CYCLETIME = 5; /* Executed every 5msec */
+        APPMODE = appmode1;
+    };
+  };
+
+  /* Definition of SonicActivate SETEVENT timing */
+  ALARM SonicAlarm
+  {
+    COUNTER = SysTimerCnt;
+    ACTION = SETEVENT
+    {
+        TASK = DistSensing;
+	EVENT = SonicActivate;
+    };
+    AUTOSTART = TRUE
+    {
+        ALARMTIME = 1;
+        CYCLETIME = 50; /* Executed every 50msec */
+        APPMODE = appmode1;
+    };
+  };
+
+  /* Definition of Operator excution timing */
+  ALARM MotorAlarm
+  {
+    COUNTER = SysTimerCnt;
+    ACTION = ACTIVATETASK
+    {
+        TASK = Operator;
+    };
+    AUTOSTART = TRUE
+    {
+        ALARMTIME = 1;
+        CYCLETIME = 5; /* Executed every 5msec */
+        APPMODE = appmode1;
+    };
+  };
+};
+
